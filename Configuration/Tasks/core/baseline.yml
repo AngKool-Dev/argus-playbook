@@ -1,0 +1,27 @@
+﻿---
+privilege: TrustedInstaller
+title: System Baseline
+description: Records system state before modifications for audit and restore purposes
+privilege: TrustedInstaller
+actions:
+  - !writeStatus: {status: "Detecting system configuration"}
+  - !powerShell:
+    command: |
+      $logDir = "$env:ProgramData\ArgusPlaybook"
+      if (!(Test-Path $logDir)) { New-Item -Path $logDir -ItemType Directory -Force | Out-Null }
+      $baseline = @{
+        Timestamp = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+        ComputerName = $env:COMPUTERNAME
+        WindowsVersion = (Get-WmiObject Win32_OperatingSystem).Caption
+        WindowsBuild = (Get-WmiObject Win32_OperatingSystem).BuildNumber
+        Architecture = (Get-WmiObject Win32_OperatingSystem).OSArchitecture
+        TotalMemoryGB = [math]::Round((Get-WmiObject Win32_ComputerSystem).TotalPhysicalMemory / 1GB, 2)
+        Processor = (Get-WmiObject Win32_Processor).Name
+        GPU = (Get-WmiObject Win32_VideoController).Name
+        PowerPlan = (powercfg /getactivescheme).Split(':')[1].Trim()
+      }
+      $baseline | ConvertTo-Json | Out-File "$logDir\baseline.json" -Encoding utf8
+    wait: true
+    runas: currentUserElevated
+    weight: 50
+

@@ -1,0 +1,29 @@
+﻿---
+title: Explorer and UI
+description: Explorer and UI customizations
+privilege: TrustedInstaller
+actions:
+  - !writeStatus: {status: "Applying UI settings"}
+  # Show file extensions
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'HideFileExt', type: REG_DWORD, data: '0', option: 'ui-show-extensions'}
+  # Show hidden files
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'Hidden', type: REG_DWORD, data: '1', option: 'ui-show-hidden'}
+  # Compact mode
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'UseCompactMode', type: REG_DWORD, data: '1', option: 'ui-compact-mode'}
+  # Disable transparency
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize', value: 'EnableTransparency', type: REG_DWORD, data: '0', option: 'ui-no-transparency'}
+  # Disable animations
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'TaskbarAnimations', type: REG_DWORD, data: '0', option: 'ui-no-animations'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Control Panel\Desktop\WindowMetrics', value: 'MinAnimate', type: REG_SZ, data: '0', option: 'ui-no-animations'}
+  # Disable Widgets
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Dsh', value: 'AllowNewsAndInterests', type: REG_DWORD, data: '0'}
+  # Disable notifications
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Policies\Microsoft\Windows\CurrentVersion\PushNotifications', value: 'NoToastApplicationNotification', type: REG_DWORD, data: '1'}
+  # Disable Start recommendations
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager', value: 'SubscribedContent-338389Enabled', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager', value: 'SubscribedContent-310093Enabled', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\ContentDeliveryManager', value: 'SubscribedContent-338387Enabled', type: REG_DWORD, data: '0'}
+  # Disable taskbar chat
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Chat', value: 'ChatIcon', type: REG_DWORD, data: '0'}
+  # Disable Copilot
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsCopilot', value: 'TurnOffWindowsCopilot', type: REG_DWORD, data: '1'}

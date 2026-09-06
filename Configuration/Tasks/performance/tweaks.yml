@@ -1,0 +1,45 @@
+﻿---
+privilege: TrustedInstaller
+title: Performance Tweaks
+description: Performance optimizations that can be independently toggled
+actions:
+  - !writeStatus: {status: "Applying performance tweaks"}
+  - !powerShell:
+    command: 'powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+    wait: true
+    runas: currentUserElevated
+    errorAction: Ignore
+    option: 'power-high-performance'
+    weight: 20
+  - !powerShell:
+    command: 'powercfg /hibernate off'
+    wait: true
+    runas: currentUserElevated
+    errorAction: Ignore
+    option: 'power-disable-hibernation'
+    weight: 10
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Power', value: 'HibernateEnabled', type: REG_DWORD, data: '0', option: 'power-disable-hibernation'}
+  - !powerShell:
+    command: 'powercfg /change monitor-timeout-ac 0'
+    wait: true
+    runas: currentUserElevated
+    errorAction: Ignore
+    option: 'power-no-display-timeout'
+    weight: 5
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile', value: 'SystemResponsiveness', type: REG_DWORD, data: '10', option: 'perf-mcss'}
+  - !service: {name: 'SysMain', operation: change, startup: 4, option: 'perf-services'}
+  - !service: {name: 'WSearch', operation: change, startup: 4, option: 'perf-services'}
+  - !service: {name: 'DoSvc', operation: change, startup: 4, option: 'perf-services'}
+  - !service: {name: 'DiagTrack', operation: change, startup: 4, option: 'perf-services'}
+  - !service: {name: 'BITS', operation: change, startup: 4, option: 'perf-services'}
+  - !cmd:
+    command: 'sc.exe stop spooler'
+    wait: false
+    ignoreErrors: true
+    errorAction: Ignore
+    option: 'perf-services'
+    weight: 5
+  - !service: {name: 'Spooler', operation: change, startup: 4, option: 'perf-services'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting', value: 'Disabled', type: REG_DWORD, data: '1', errorAction: Ignore}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'StartupDelayInMSec', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', value: 'EnableFirstLogonAnimation', type: REG_DWORD, data: '0', errorAction: Ignore}

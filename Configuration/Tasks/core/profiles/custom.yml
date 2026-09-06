@@ -1,0 +1,9 @@
+﻿---
+privilege: TrustedInstaller
+title: Custom Profile
+description: Custom profile relies on individual toggles selected by the user
+actions:
+  - !writeStatus: {status: "Applying Custom profile"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'LaunchTo', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'ShowTaskViewButton', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'UseCompactMode', type: REG_DWORD, data: '1'}

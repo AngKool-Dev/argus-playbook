@@ -1,0 +1,22 @@
+﻿---
+privilege: TrustedInstaller
+title: Gaming Tweaks
+description: Gaming optimizations that can be independently toggled
+actions:
+  - !writeStatus: {status: "Applying gaming tweaks"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR', value: 'AutoGameModeEnabled', type: REG_DWORD, data: '1', option: 'gaming-game-mode'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GraphicsDrivers', value: 'HwSchMode', type: REG_DWORD, data: '2', option: 'gaming-hags'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR', value: 'DisableFullscreenOptimizations', type: REG_DWORD, data: '0', option: 'gaming-fullscreen-opt'}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\GameDVR', value: 'AppCaptureEnabled', type: REG_DWORD, data: '0', option: 'gaming-game-mode'}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\GameDVR', value: 'GameDVR_Enabled', type: REG_DWORD, data: '0', option: 'gaming-game-mode'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\GameBar', value: 'AllowGameBar', type: REG_DWORD, data: '0', option: 'gaming-game-mode'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\GameBar', value: 'AllowGameDVR', type: REG_DWORD, data: '0', option: 'gaming-game-mode'}
+  - !powerShell:
+    command: 'powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+    wait: true
+    runas: currentUserElevated
+    errorAction: Ignore
+    option: 'gaming-game-mode'
+    weight: 20
+  - !service: {name: 'DiagTrack', operation: change, startup: 4, option: 'gaming-game-mode'}
+  - !service: {name: 'WSearch', operation: change, startup: 4, option: 'gaming-game-mode'}

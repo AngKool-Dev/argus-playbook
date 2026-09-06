@@ -1,0 +1,8 @@
+﻿---
+title: Profile Configuration
+description: Profiles are now handled by individual toggles in CheckboxPages
+privilege: TrustedInstaller
+actions:
+  - !writeStatus: {status: "Using custom selection mode"}
+  # Profile selection is now handled by individual CheckboxPage options
+  # Each feature can be independently enabled or disabled

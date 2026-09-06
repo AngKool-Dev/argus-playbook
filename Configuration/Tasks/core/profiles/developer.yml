@@ -1,0 +1,27 @@
+﻿---
+privilege: TrustedInstaller
+title: Developer Profile
+description: Developer workstation optimizations
+actions:
+  - !writeStatus: {status: "Applying Developer profile"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'LaunchTo', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'ShowTaskViewButton', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'UseCompactMode', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'HideFileExt', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'Hidden', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock', value: 'AllowDevelopmentWithoutDevLicense', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', value: 'LongPathsEnabled', type: REG_DWORD, data: '1'}
+  - !powerShell:
+    command: >-
+      $progressPreference = 'silentlyContinue'
+      if (!(Get-ExecutionPolicy -Scope CurrentUser)) {
+        Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy RemoteSigned -Force
+      }
+    wait: true
+    runas: currentUser
+    errorAction: Ignore
+    weight: 10
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Defender', value: 'SpyNetReporting', type: REG_DWORD, data: '0', option: 'dev-cloud-protection'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Defender', value: 'SubmitSamplesConsent', type: REG_DWORD, data: '0', option: 'dev-cloud-protection'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection', value: 'AllowTelemetry', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\AdvertisingInfo', value: 'Enabled', type: REG_DWORD, data: '0'}

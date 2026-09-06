@@ -1,0 +1,42 @@
+﻿---
+privilege: TrustedInstaller
+title: Core Start
+description: Core system optimizations applied to all profiles
+actions:
+  - !cmd:
+    command: "..\Scripts\DISABLENOTIFS.cmd"
+    exeDir: true
+    wait: true
+    runas: currentUserElevated
+    errorAction: Ignore
+    weight: 10
+
+  - !writeStatus: {status: "Optimizing PowerShell", weight: 5}
+  - !powerShell:
+    command: >-
+      $windir = [Environment]::GetFolderPath('Windows')
+      $ngen = Join-Path $windir "Microsoft.NET\Framework64\v4.0.30319\ngen.exe"
+      if (Test-Path $ngen) {
+        & $ngen executequeueditems 2>&1 | Out-Null
+        "[OK] NGEN optimization complete" | Out-File "$env:ProgramData\ArgusPlaybook\output.log" -Append -Encoding utf8
+      }
+    wait: true
+    exeDir: false
+    runas: currentUserElevated
+    errorAction: Ignore
+    weight: 15
+
+  - !writeStatus: {status: "Configuring PowerShell security", weight: 5}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\PowerShell\1\ShellIds\Microsoft.PowerShell', value: 'ExecutionPolicy', type: REG_SZ, data: 'RemoteSigned'}
+
+  - !writeStatus: {status: "Disabling Windows Error Reporting", weight: 5}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\Windows Error Reporting', value: 'Disabled', type: REG_DWORD, data: '1', errorAction: Ignore}
+
+  - !writeStatus: {status: "Disabling automatic restart on system failure", weight: 5}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\CrashControl', value: 'AutoReboot', type: REG_DWORD, data: '0', errorAction: Ignore}
+
+  - !writeStatus: {status: "Disabling startup delay", weight: 5}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'StartupDelayInMSec', type: REG_DWORD, data: '0'}
+
+  - !writeStatus: {status: "Disabling first logon animation", weight: 5}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System', value: 'EnableFirstLogonAnimation', type: REG_DWORD, data: '0', errorAction: Ignore}

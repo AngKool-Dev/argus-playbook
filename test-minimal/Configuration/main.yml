@@ -1,0 +1,11 @@
+﻿---
+title: Test
+description: Test playbook
+actions:
+  - !writeStatus: {status: 'Testing'}
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced'
+    value: 'LaunchTo'
+    data: '1'
+    type: REG_DWORD
+    option: 'test-option'
