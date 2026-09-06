@@ -1,9 +1,0 @@
-﻿---
-privilege: TrustedInstaller
-title: Safe Profile
-description: Minimal modifications for maximum compatibility
-actions:
-  - !writeStatus: {status: "Applying Safe profile"}
-  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'LaunchTo', type: REG_DWORD, data: '1'}
-  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'ShowTaskViewButton', type: REG_DWORD, data: '0'}
-  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'UseCompactMode', type: REG_DWORD, data: '1'}
