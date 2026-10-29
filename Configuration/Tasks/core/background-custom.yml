@@ -1,0 +1,44 @@
+---
+privilege: TrustedInstaller
+title: Custom Background
+description: Applies user-selected custom background image
+actions:
+  - !writeStatus: {status: "Applying custom background"}
+  - !powerShell:
+      command: >-
+        $customBg = Join-Path $env:ProgramData 'ArgusPlaybook\custom-background.jpg'
+        if (Test-Path $customBg) {
+          $regPaths = @(
+            "HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Themes\Personalize",
+            "HKLM:\SOFTWARE\Policies\Microsoft\Windows\Personalization"
+          )
+          foreach ($regPath in $regPaths) {
+            if (!(Test-Path $regPath)) { New-Item -Path $regPath -Force | Out-Null }
+            Set-ItemProperty -Path $regPath -Name "SystemTheme" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $regPath -Name "AppsTheme" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+          }
+          $userKeys = Get-ChildItem "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList" -ErrorAction SilentlyContinue | Where-Object { $_.PSChildName -match '^S-1-5-21-\d+$' }
+          foreach ($key in $userKeys) {
+            $sid = $key.PSChildName
+            $userRegPath = "HKU:\$sid\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize"
+            if (!(Test-Path $userRegPath)) { New-Item -Path $userRegPath -Force | Out-Null }
+            Set-ItemProperty -Path $userRegPath -Name "SystemTheme" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $userRegPath -Name "AppsTheme" -Value 0 -Type DWord -ErrorAction SilentlyContinue
+            $desktopPath = "HKU:\$sid\Control Panel\Desktop"
+            if (!(Test-Path $desktopPath)) { New-Item -Path $desktopPath -Force | Out-Null }
+            Set-ItemProperty -Path $desktopPath -Name "Wallpaper" -Value $customBg -ErrorAction SilentlyContinue
+          }
+          Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class WallpaperCustom {
+    [DllImport("user32.dll", CharSet = CharSet.Auto)]
+    public static extern int SystemParametersInfo(int uAction, int uParam, string lpvParam, int fuWinIni);
+}
+"@
+          [WallpaperCustom]::SystemParametersInfo(20, 0, $customBg, 3) | Out-Null
+          Write-Output "[OK] Custom background applied with dark mode"
+        }
+      wait: true
+      runas: currentUserElevated
+      errorAction: Ignore

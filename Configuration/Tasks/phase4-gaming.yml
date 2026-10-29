@@ -1,0 +1,181 @@
+---
+privilege: TrustedInstaller
+actions:
+  - !writeStatus: {status: "Applying Gaming Tweaks"}
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control', value: 'SvcHostSplitThresholdInKB', type: REG_DWORD, data: '4294967295'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control', value: 'WaitToKillServiceTimeout', type: REG_SZ, data: '2000'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\AppCompat', value: 'AllowTelemetry', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\FTH', value: 'Enabled', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Memory Management', value: 'DisablePagingExecutive', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\kernel', value: 'SerializeTimerExpiration', type: REG_DWORD, data: '1'}
+
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-Superfetch/StoreLog', value: 'Enable', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-Superfetch/Main', value: 'Enable', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WINEVT\Channels\Microsoft-Windows-Superfetch/PfApLog', value: 'Enable', type: REG_DWORD, data: '0'}
+
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\fontdrvhost.exe\PerfOptions', value: 'IoPriority', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sppsvc.exe\PerfOptions', value: 'CpuPriorityClass', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sppsvc.exe\PerfOptions', value: 'IoPriority', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\fontdrvhost.exe\PerfOptions', value: 'CpuPriorityClass', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sihost.exe\PerfOptions', value: 'CpuPriorityClass', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\sihost.exe\PerfOptions', value: 'IoPriority', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\lsass.exe\PerfOptions', value: 'CpuPriorityClass', type: REG_DWORD, data: '1'}
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'MaxUserPort', type: REG_DWORD, data: '65534'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Multimedia\SystemProfile', value: 'SystemResponsiveness', type: REG_DWORD, data: '10'}
+  - !registryValue: {path: 'HKCU\Software\Microsoft\Multimedia\Audio', value: 'UserDuckingPreference', type: REG_DWORD, data: '3'}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Multimedia\Audio', value: 'UserDuckingPreference', type: REG_DWORD, data: '3'}
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters', value: 'DynamicSendBufferDisable', type: REG_DWORD, data: '0'}
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers', value: 'TdrDelay', type: REG_DWORD, data: '10'}
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\GraphicsDrivers', value: 'DisableOverlays', operation: delete}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\Dwm', value: 'EnableOverlay', operation: delete}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\Dwm', value: 'OverlayTestMode', operation: delete}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\Dwm', value: 'OverlayMinFPS', operation: delete}
+
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        $amd = $false
+        try {
+          foreach ($g in (Get-CimInstance Win32_VideoController -ErrorAction SilentlyContinue)) {
+            $id = [string]$g.PNPDeviceID
+            if ($id -notmatch 'VEN_1002') { continue }
+            $n = [string]$g.Name
+            if ($n -match 'RX\s*\d|Radeon\s+Pro|FirePro|Vega\s+(56|64)|Radeon\s+VII') { $amd = $true; break }
+            if ($n -match 'Radeon\(TM\)\s+Graphics|Radeon\s+Graphics|Vega\s+\d+\s+Graphics|Radeon\(TM\)\s+[RG]') { continue }
+            $amd = $true
+            break
+          }
+        } catch {}
+        if ($amd) {
+          try {
+            $g = 'HKLM:\SYSTEM\CurrentControlSet\Control\GraphicsDrivers'
+            if (-not (Test-Path $g)) { New-Item -Path $g -Force -ErrorAction SilentlyContinue | Out-Null }
+            Set-ItemProperty -Path $g -Name 'TdrDelay' -Value 10 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $g -Name 'TdrDdiDelay' -Value 10 -Type DWord -Force -ErrorAction SilentlyContinue
+          } catch {}
+        }
+        $global:LASTEXITCODE = 0
+
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        function Set-FsoStock {
+          param([string]$HiveRoot)
+          $key = $HiveRoot + '\System\GameConfigStore'
+          try {
+            if (-not (Test-Path $key)) { New-Item -Path $key -Force -ErrorAction SilentlyContinue | Out-Null }
+            Set-ItemProperty -Path $key -Name 'GameDVR_FSEBehaviorMode' -Value 2 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $key -Name 'GameDVR_DXGIHonorFSEWindowsCompatible' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $key -Name 'GameDVR_HonorUserFSEBehaviorMode' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Set-ItemProperty -Path $key -Name 'GameDVR_EFSEFeatureFlags' -Value 0 -Type DWord -Force -ErrorAction SilentlyContinue
+            Remove-ItemProperty -Path $key -Name 'GameDVR_FSEBehavior' -Force -ErrorAction SilentlyContinue
+          } catch {}
+        }
+        $hives = @('Registry::HKEY_USERS\.DEFAULT')
+        if (Test-Path 'Registry::HKEY_USERS\AME_UserHive_Default') { $hives += 'Registry::HKEY_USERS\AME_UserHive_Default' }
+        Get-ChildItem 'Registry::HKEY_USERS' -ErrorAction SilentlyContinue | Where-Object {
+          $_.PSChildName -match '^S-1-5-21-' -and $_.PSChildName -notmatch '_Classes$'
+        } | ForEach-Object { $hives += ('Registry::HKEY_USERS\' + $_.PSChildName) }
+        foreach ($h in $hives) { Set-FsoStock -HiveRoot $h }
+        $ntu = Join-Path $env:SystemDrive 'Users\Default\NTUSER.DAT'
+        if ((Test-Path $ntu) -and -not (Test-Path 'Registry::HKEY_USERS\AME_UserHive_Default')) {
+          & reg.exe load 'HKU\FSOS_FSO_Default' $ntu 2>&1 | Out-Null
+          if ($LASTEXITCODE -eq 0) {
+            Set-FsoStock -HiveRoot 'Registry::HKEY_USERS\FSOS_FSO_Default'
+            [gc]::Collect(); Start-Sleep -Milliseconds 300
+            & reg.exe unload 'HKU\FSOS_FSO_Default' 2>&1 | Out-Null
+          }
+        }
+        $global:LASTEXITCODE = 0
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\mouclass\Parameters', value: 'MouseDataQueueSize', type: REG_DWORD, data: '100'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\kbdclass\Parameters', value: 'KeyboardDataQueueSize', type: REG_DWORD, data: '100'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\PriorityControl', value: 'Win32PrioritySeparation', type: REG_DWORD, data: '2'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'RawMouseThrottleEnabled', operation: delete}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'RawMouseThrottleForced', operation: delete}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'RawMouseThrottleDuration', operation: delete}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'RawMouseThrottleLeeway', operation: delete}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'DoubleClickSpeed', type: REG_SZ, data: '480'}
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\LanmanWorkstation\Parameters', value: 'DisableBandwidthThrottling', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\AFD\Parameters', value: 'FastSendDatagramThreshold', type: REG_DWORD, data: '1500'}
+
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        Remove-ItemProperty -Path 'HKLM:\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters' -Name 'TcpTimedWaitDelay' -Force -ErrorAction SilentlyContinue
+        $global:LASTEXITCODE = 0
+
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\SoftwareProtectionPlatform\Activation', value: 'Manual', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Remote Assistance', value: 'fAllowToGetHelp', type: REG_DWORD, data: '0'}
+
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'ScreenSaveActive', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'MouseThreshold2', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'MenuShowDelay', type: REG_SZ, data: '1'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'ActiveWindowTracking', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'MouseSpeed', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'Beep', type: REG_SZ, data: 'No'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'MouseThreshold1', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'ScreenSaveTimeOut', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'MouseTrails', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'MouseAccel', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'JPEGImportQuality', type: REG_DWORD, data: '100'}
+  - !registryValue: {path: 'HKCU\Control Panel\Mouse', value: 'SnapToDefaultButton', type: REG_SZ, data: '0'}
+
+  - !registryValue: {path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects', value: 'VisualFXSetting', type: REG_DWORD, data: '3'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\FontSmoothing', value: 'DefaultValue', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\TooltipAnimation', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DropShadow', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ListBoxSmoothScrolling', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\SOFTWARE\Microsoft\Windows\DWM', value: 'AlwaysHibernateThumbnails', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'UserPreferencesMask', type: REG_BINARY, data: '9032038010000000'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\SelectionFade', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DragFullWindows', value: 'DefaultValue', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop\WindowMetrics', value: 'MinAnimate', type: REG_SZ, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ControlAnimations', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\CursorShadow', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'IconsOnly', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ListviewAlphaSelect', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'FontSmoothing', type: REG_SZ, data: '2'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\MenuAnimation', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'ListviewShadow', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\Control Panel\Desktop', value: 'DragFullWindows', type: REG_SZ, data: '1'}
+  - !registryValue: {path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'ListviewAlphaSelect', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\TaskbarAnimations', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'TaskbarAnimations', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\SOFTWARE\Microsoft\Windows\DWM', value: 'EnableAeroPeek', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\AnimateMinMax', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DWMSaveThumbnailEnabled', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ListviewShadow', value: 'DefaultValue', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ThumbnailsOrIcon', value: 'DefaultValue', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\ComboBoxAnimation', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\VisualEffects\DWMAeroPeekEnabled', value: 'DefaultValue', type: REG_DWORD, data: '0'}
+
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        $sx = [byte[]]@(0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xC0,0xCC,0x0C,0x00,0x00,0x00,0x00,0x00,0x80,0x99,0x19,0x00,0x00,0x00,0x00,0x00,0x40,0x66,0x26,0x00,0x00,0x00,0x00,0x00,0x00,0x33,0x33,0x00,0x00,0x00,0x00,0x00)
+        $sy = [byte[]]@(0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x38,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x70,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xA8,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0xE0,0x00,0x00,0x00,0x00,0x00)
+        foreach ($scope in @('Registry::HKEY_CURRENT_USER','Registry::HKEY_USERS\.DEFAULT')) {
+          $mouse = """$scope\Control Panel\Mouse"""
+          $desktop = """$scope\Control Panel\Desktop"""
+          New-Item -Path $mouse -Force -ErrorAction SilentlyContinue | Out-Null
+          Set-ItemProperty -Path $mouse -Name 'SmoothMouseXCurve' -Value $sx -Type Binary -Force -ErrorAction SilentlyContinue
+          Set-ItemProperty -Path $mouse -Name 'SmoothMouseYCurve' -Value $sy -Type Binary -Force -ErrorAction SilentlyContinue
+          Remove-ItemProperty -Path $desktop -Name 'SCRNSAVE.EXE' -Force -ErrorAction SilentlyContinue
+        }
+        $global:LASTEXITCODE = 0
+
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Power', value: 'HiberbootEnabled', type: REG_DWORD, data: '0'}
+
+  - !writeStatus: {status: "Disabling WER"}
+  - !service: {name: 'WerSvc', operation: change, startup: 4}

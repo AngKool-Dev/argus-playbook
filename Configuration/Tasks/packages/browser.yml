@@ -1,0 +1,8 @@
+---
+privilege: TrustedInstaller
+title: Browser Selection
+description: Installs Brave or keeps Edge based on user selection
+actions:
+  - !writeStatus: {status: "Configuring browser"}
+  - !task: {path: 'Tasks\packages\keep.yml', option: 'browser-keep-edge'}
+  - !task: {path: 'Tasks\packages\brave.yml', option: 'browser-install-brave'}

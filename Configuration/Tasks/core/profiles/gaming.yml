@@ -1,0 +1,25 @@
+﻿---
+privilege: TrustedInstaller
+title: Gaming Profile
+description: Gaming-focused optimizations
+actions:
+  - !writeStatus: {status: "Applying Gaming profile"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'LaunchTo', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'ShowTaskViewButton', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Themes\Personalize', value: 'EnableTransparency', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKCU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\Explorer\Advanced', value: 'TaskbarAnimations', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR', value: 'AutoGameModeEnabled', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GraphicsDrivers', value: 'HwSchMode', type: REG_DWORD, data: '2'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\GameDVR', value: 'DisableFullscreenOptimizations', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\GameDVR', value: 'AppCaptureEnabled', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKU\.DEFAULT\Software\Microsoft\Windows\CurrentVersion\GameDVR', value: 'GameDVR_Enabled', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\GameBar', value: 'AllowGameBar', type: REG_DWORD, data: '0'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\GameBar', value: 'AllowGameDVR', type: REG_DWORD, data: '0'}
+  - !powerShell:
+    command: 'powercfg /setactive 8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c'
+    wait: true
+    runas: currentUserElevated
+    errorAction: Ignore
+    weight: 20
+  - !service: {name: 'DiagTrack', operation: change, startup: 4}
+  - !service: {name: 'WSearch', operation: change, startup: 4}

@@ -1,0 +1,12 @@
+---
+privilege: TrustedInstaller
+title: Argus Background
+description: Applies Argus default dark background and dark mode
+actions:
+  - !writeStatus: {status: "Applying Argus theme"}
+  - !powerShell:
+      command: '.\Apply-ArgusTheme.ps1'
+      wait: true
+      exeDir: true
+      runas: currentUserElevated
+      errorAction: Ignore

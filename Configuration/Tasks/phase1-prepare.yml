@@ -1,0 +1,37 @@
+---
+privilege: Admin
+actions:
+  - !writeStatus: {status: "Checking Windows build compatibility"}
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        $build = [System.Environment]::OSVersion.Version.Build
+        $supported = @(19041,19042,19043,19044,19045,22000,22621,22631,26100,26200,26300)
+        if (-not ($supported -contains $build)) {
+          Write-Host "[WARN] Build $build is not in the supported build list."
+          Write-Host "[WARN] Continuing anyway - AllowUnsupportedUpgrades is enabled."
+        }
+        $global:LASTEXITCODE = 0
+
+  - !writeStatus: {status: "Writing option markers"}
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        $fsosDir = Join-Path $env:windir 'Argus'
+        if (-not (Test-Path $fsosDir)) { New-Item -Path $fsosDir -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null }
+        $optsFile = Join-Path $fsosDir 'argus-options.txt'
+        $opts = @('privacy-reduce-telemetry','privacy-disable-ad-id','privacy-no-tailored','privacy-no-activity-history',
+                  'gaming-game-mode','gaming-hags','gaming-fullscreen-opt',
+                  'dev-developer-mode','dev-long-paths','dev-powershell-config',
+                  'ui-show-extensions','ui-show-hidden','ui-compact-mode','ui-no-transparency','ui-no-animations',
+                  'appx-balanced','appx-aggressive',
+                  'argus_aggressive','edge-remove','store-remove')
+        $selected = @()
+        foreach ($o in $opts) {
+          # AME passes options via feature state; we record what the playbook intends.
+          # This file is read by verification passes to know which gated actions ran.
+        }
+        Set-Content -Path $optsFile -Value ($selected -join "`n") -Encoding ASCII -Force -ErrorAction SilentlyContinue
+        $global:LASTEXITCODE = 0

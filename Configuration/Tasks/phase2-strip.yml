@@ -1,0 +1,223 @@
+---
+privilege: TrustedInstaller
+actions:
+  - !writeStatus: {status: "Pausing Windows Updates"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'FlightSettingsMaxPauseDays', type: REG_DWORD, data: '3650'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'PauseFeatureUpdatesStartTime', type: REG_SZ, data: '2025-01-01T00:00:00Z'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'PauseFeatureUpdatesEndTime', type: REG_SZ, data: '2033-01-01T00:00:00Z'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'PauseQualityUpdatesStartTime', type: REG_SZ, data: '2025-01-01T00:00:00Z'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'PauseQualityUpdatesEndTime', type: REG_SZ, data: '2033-01-01T00:00:00Z'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'PauseUpdatesStartTime', type: REG_SZ, data: '2025-01-01T00:00:00Z'}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\WindowsUpdate\UX\Settings', value: 'PauseUpdatesExpiryTime', type: REG_SZ, data: '2033-01-01T00:00:00Z'}
+
+  - !writeStatus: {status: "Writing AppX snapshot"}
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        $snapPath = Join-Path $env:TEMP 'argus-appx-snapshot.txt'
+        (Get-AppxPackage -AllUsers -ErrorAction SilentlyContinue).PackageFamilyName |
+          Sort-Object -Unique | Out-File -FilePath $snapPath -Encoding ASCII -Force
+        $global:LASTEXITCODE = 0
+
+  - !writeStatus: {status: "Removing Bloatware", option: "appx-balanced"}
+  - !powerShell:
+      option: "appx-balanced"
+      wait: true
+      errorAction: Ignore
+      command: |
+        $marker = Join-Path $env:windir 'Argus\.personalization-applied'
+        if (Test-Path $marker) { $global:LASTEXITCODE = 0; return }
+        $firstRunOnly = @('SpotifyAB.SpotifyMusic*','*Netflix*','*TikTok*')
+        foreach ($pat in $firstRunOnly) {
+          Get-AppxPackage -AllUsers | Where-Object { $_.Name -like $pat -or $_.PackageFamilyName -like $pat } | ForEach-Object {
+            try { Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue } catch {}
+          }
+          Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like $pat -or $_.PackageName -like $pat } | ForEach-Object {
+            try { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null } catch {}
+          }
+        }
+        $global:LASTEXITCODE = 0
+
+  - !powerShell:
+      option: "appx-balanced"
+      wait: true
+      errorAction: Ignore
+      command: |
+        # Stop-Service blocks with no timeout - use bounded stop instead
+        function Stop-ServiceBounded($name, $seconds) {
+          try {
+            $sc = New-Object System.ServiceProcess.ServiceController $name
+            if ($sc.Status -ne 'Running' -or -not $sc.CanStop) { return }
+            $sc.Stop()
+            try { $sc.WaitForStatus('Stopped', [TimeSpan]::FromSeconds($seconds)) }
+            catch {
+              $dir = Join-Path $env:windir 'Argus'
+              if (-not (Test-Path $dir)) { New-Item -Path $dir -ItemType Directory -Force -ErrorAction SilentlyContinue | Out-Null }
+              ((Get-Date -Format s) + ' - service did not stop within ' + $seconds + 's, continuing: ' + $name) | Out-File -FilePath (Join-Path $dir 'skipped-tasks.txt') -Append -Encoding utf8
+            }
+          } catch {}
+        }
+        # taskkill can also block - use bounded kill
+        function Kill-Bounded($image, $seconds) {
+          try {
+            $psi = New-Object System.Diagnostics.ProcessStartInfo
+            $psi.FileName = [System.IO.Path]::Combine($env:windir, 'System32', 'taskkill.exe')
+            $psi.Arguments = '/F /T /IM ' + $image
+            $psi.UseShellExecute = $false
+            $psi.CreateNoWindow = $true
+            $proc = [System.Diagnostics.Process]::Start($psi)
+            if (-not $proc.WaitForExit($seconds * 1000)) { try { $proc.Kill() } catch {} }
+          } catch {}
+        }
+        Stop-ServiceBounded 'WidgetService' 20
+        foreach ($img in @('msedgewebview2.exe','Widgets.exe','WidgetService.exe','GameInputSvc.exe')) {
+          Kill-Bounded $img 15
+        }
+        Start-Sleep -Milliseconds 500
+        $global:LASTEXITCODE = 0
+
+  - !appx: {name: 'Microsoft.549981C3F5F10*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.BingNews*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.BingWeather*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.BingSearch*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'MicrosoftCorporationII.Bing*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Clipchamp.Clipchamp*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.GetHelp*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Getstarted*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '7EE7776C.LinkedInforWindows*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Microsoft3DViewer*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MSPaint*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftOfficeHub*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftSolitaireCollection*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftStickyNotes*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Office.OneNote*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.OutlookForWindows*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.People*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.PowerAutomateDesktop*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.SkypeApp*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.StartExperiencesApp*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Todos*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Whiteboard*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.WidgetsPlatformRuntime*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Windows.PeopleExperienceHost*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Windows.SecureAssessmentBrowser*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.WindowsAlarms*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.WindowsCamera*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.WindowsFeedbackHub*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.WindowsMaps*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.WindowsSoundRecorder*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.ZuneMusic*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.ZuneVideo*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'MicrosoftCorporationII.MicrosoftFamily*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'MicrosoftCorporationII.QuickAssist*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Advertising.Xaml*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftPowerBIForWindows*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MixedReality.Portal*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Office.Word*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Office.Excel*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Office.PowerPoint*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.OutlookPWA*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Flipgrid*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'AppleInc.AppleMusicWin*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'AppleInc.iTunes*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.M365Companions*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftJournal*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.PCManager*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Office.Sway*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.NetworkSpeedTest*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Windows.AIHub*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'AdobeSystemsIncorporated.AdobePhotoshopExpress*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'king.com.CandyCrushSaga*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'king.com.CandyCrushSodaSaga*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'king.com.BubbleWitch3Saga*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'king.com.FarmHeroesSaga*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Amazon.com.Amazon*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'AmazonVideo.PrimeVideo*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'BookingApp*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'HULULLC.HULUPLUS*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*DisneyMagicKingdoms*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Facebook*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Instagram*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Twitter*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Pandora*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*iHeartRadio*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Plex*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Shazam*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Viber*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*WinZip*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*NYTCrossword*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Duolingo*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Fitbit*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: '*Flipboard*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+
+  - !powerShell:
+      option: "appx-balanced"
+      wait: true
+      errorAction: Ignore
+      command: |
+        try {
+          $publisherPrefixes = @('BlipStudioInc','Disney','Instagram','Facebook','Amazon','HULULLC','iHeartRadio','Pandora','Plex','Shazam','Viber','WinZip','NYTCrossword','Duolingo','Fitbit','Flipboard','XING','EclipseManager','ActiproSoftwareLLC','CyberLinkMediaSuite','PicsArt','PolarrPhotoEditor','PhototasticCollage','DrawboardPDF','AutodeskSketchBook','Wunderlist','TuneInRadio','SlingTV','OneCalendar','ACGMediaPlayer','Sidia.LiveWallpaper','Asphalt8','CaesarsSlotsFreeCasino','COOKINGFEVER','HiddenCity','MarchofEmpires','DisneyMagicKingdoms','RoyalRevolt','FarmVille2','BlipStudio','AppleInc')
+          foreach ($prefix in $publisherPrefixes) {
+            Get-AppxPackage -AllUsers | Where-Object { $_.Name -like ($prefix + '*') -or $_.PackageFamilyName -like ($prefix + '*') } | ForEach-Object {
+              try { Remove-AppxPackage -Package $_.PackageFullName -AllUsers -ErrorAction SilentlyContinue } catch {}
+            }
+            Get-AppxProvisionedPackage -Online -ErrorAction SilentlyContinue | Where-Object { $_.DisplayName -like ($prefix + '*') -or $_.PackageName -like ($prefix + '*') } | ForEach-Object {
+              try { Remove-AppxProvisionedPackage -Online -PackageName $_.PackageName -ErrorAction SilentlyContinue | Out-Null } catch {}
+            }
+          }
+        } catch {}
+        $global:LASTEXITCODE = 0
+
+  - !appx: {name: 'microsoft.windowscommunicationsapps*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Windows.DevHome*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftTeamsforSurfaceHub*', operation: remove, option: "appx-balanced", errorAction: Ignore}
+
+  - !writeStatus: {status: "Removing Xbox Apps", option: "appx-aggressive"}
+  - !powerShell:
+      option: "appx-aggressive"
+      wait: true
+      errorAction: Ignore
+      command: |
+        foreach ($n in @('GameBar','GameBarFT','GameBarFTServer','GameBarPresenceWriter','gameinputsvc')) {
+          try { Get-Process -Name $n -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue } catch {}
+        }
+        try { taskkill.exe /F /IM 'GameBar.exe' /T 2>$null | Out-Null } catch {}
+        try { taskkill.exe /F /IM 'GameBarFT.exe' /T 2>$null | Out-Null } catch {}
+        try { taskkill.exe /F /IM 'GameBarFTServer.exe' /T 2>$null | Out-Null } catch {}
+        try { taskkill.exe /F /IM 'GameBarPresenceWriter.exe' /T 2>$null | Out-Null } catch {}
+        Start-Sleep -Milliseconds 500
+        $global:LASTEXITCODE = 0
+
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\GameBarFT.exe', value: 'Debugger', type: REG_SZ, data: '%SystemRoot%\System32\taskkill.exe', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\GameBar.exe', value: 'Debugger', type: REG_SZ, data: '%SystemRoot%\System32\taskkill.exe', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\GameBarFTServer.exe', value: 'Debugger', type: REG_SZ, data: '%SystemRoot%\System32\taskkill.exe', option: "appx-aggressive"}
+
+  - !appx: {name: 'Microsoft.Xbox*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.XboxApp*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.GamingApp*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.XboxGameOverlay*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.XboxGamingOverlay*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.XboxIdentityProvider*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.XboxSpeechToTextOverlay*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Edge.GameAssist*', operation: remove, option: "appx-aggressive", errorAction: Ignore}
+
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\GameBar.exe', operation: delete, option: "appx-aggressive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\GameBarFT.exe', operation: delete, option: "appx-aggressive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Image File Execution Options\GameBarFTServer.exe', operation: delete, option: "appx-aggressive"}
+
+  - !registryValue: {path: 'HKCU\Software\Microsoft\GameBar', value: 'ShowStartupPanel', type: REG_DWORD, data: '0', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKCR\ms-gamebar', value: '', type: REG_SZ, data: 'URL:ms-gamebar', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKCR\ms-gamebar', value: 'URL Protocol', type: REG_SZ, data: '', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKCR\ms-gamebar', value: 'NoOpenWith', type: REG_SZ, data: '', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKCR\ms-gamebar\shell\open\command', value: '', type: REG_SZ, data: '%SystemRoot%\System32\systray.exe', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKCR\ms-gamebarservices', value: '', type: REG_SZ, data: 'URL:ms-gamebarservices', option: "appx-aggressive"}
+  - !registryValue: {path: 'HKCR\ms-gamebarservices', value: 'URL Protocol', type: REG_SZ, data: '', option: "appx-aggressive"}
+
+  - !writeStatus: {status: "Removing OneDrive", option: "remove-onedrive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\Microsoft.OneDrive_8wekyb3d8bbwe', operation: add, option: "remove-onedrive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\microsoft.microsoftskydrive_8wekyb3d8bbwe', operation: add, option: "remove-onedrive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\Microsoft.SkyDrive_8wekyb3d8bbwe', operation: add, option: "remove-onedrive"}
+  - !taskKill: {name: "OneDriveStandaloneUpdater", option: "remove-onedrive", errorAction: Ignore}
+  - !taskKill: {name: "OneDriveSetup", option: "remove-onedrive", errorAction: Ignore}
+  - !taskKill: {name: "OneDrive", option: "remove-onedrive", errorAction: Ignore}

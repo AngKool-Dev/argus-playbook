@@ -1,0 +1,12 @@
+﻿---
+privilege: TrustedInstaller
+title: Keep All AppX
+description: No AppX removal
+actions:
+  - !writeStatus: {status: "Keeping all AppX packages"}
+  - !powerShell:
+      command: '[OK] No AppX packages removed' | Out-File "$env:ProgramData\ArgusPlaybook\output.log" -Append -Encoding utf8
+      wait: true
+      runas: currentUser
+      errorAction: Ignore
+      option: 'browser-keep-edge'

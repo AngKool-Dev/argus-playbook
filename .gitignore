@@ -1,3 +1,14 @@
-*
-!.gitignore
-!README.md
+# Build artifacts
+*.apbx
+dist/
+*.vhd
+*.vhdx
+*.iso
+
+# Test artifacts
+test-minimal/
+test-radio/
+
+# OS files
+Thumbs.db
+.DS_Store

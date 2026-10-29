@@ -1,0 +1,13 @@
+---
+privilege: Admin
+actions:
+  - !writeStatus: {status: "Applying Developer Settings"}
+
+  - !registryValue: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock', value: 'AllowDevelopmentWithoutDevLicense', type: REG_DWORD, data: '1'}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\FileSystem', value: 'LongPathsEnabled', type: REG_DWORD, data: '1'}
+  - !powerShell:
+      wait: true
+      errorAction: Ignore
+      command: |
+        try { Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope LocalMachine -Force -ErrorAction SilentlyContinue } catch {}
+        $global:LASTEXITCODE = 0

@@ -1,0 +1,46 @@
+---
+privilege: TrustedInstaller
+actions:
+  - !writeStatus: {status: "Removing Microsoft Edge", option: "remove-edge"}
+  - !appx: {name: 'Microsoft.MicrosoftEdge_8wekyb3d8bbwe', type: family, operation: remove, option: "remove-edge", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftEdge.Stable_8wekyb3d8bbwe', type: family, operation: remove, option: "remove-edge", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftEdge.Beta_8wekyb3d8bbwe', type: family, operation: remove, option: "remove-edge", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftEdge.Dev_8wekyb3d8bbwe', type: family, operation: remove, option: "remove-edge", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.MicrosoftEdge.Canary_8wekyb3d8bbwe', type: family, operation: remove, option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge', value: 'DefaultBrowserSettingEnabled', type: REG_DWORD, data: '0', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge', value: 'DefaultBrowserPromptEnabled', type: REG_DWORD, data: '0', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SOFTWARE\Policies\Microsoft\Edge', value: 'HideFirstRunDialog', type: REG_DWORD, data: '1', option: "remove-edge"}
+
+  - !writeStatus: {status: "Removing Microsoft Store", option: "remove-store"}
+  - !appx: {name: 'Microsoft.WindowsStore_8wekyb3d8bbwe', type: family, operation: remove, option: "remove-store", errorAction: Ignore}
+
+  - !writeStatus: {status: "Removing Copilot / AI", option: "remove-ai"}
+  - !appx: {name: 'Microsoft.Copilot_8wekyb3d8bbwe', operation: remove, option: "remove-ai", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Windows.Copilot_cw5n1h2txyewy', operation: remove, option: "remove-ai", errorAction: Ignore}
+  - !appx: {name: 'MicrosoftWindows.Client.Copilot_cw5n1h2txyewy', operation: remove, option: "remove-ai", errorAction: Ignore}
+  - !appx: {name: 'MicrosoftWindows.Client.AIX_cw5n1h2txyewy', operation: remove, option: "remove-ai", errorAction: Ignore}
+  - !appx: {name: 'Microsoft.Windows.Ai.Copilot.Provider_cw5n1h2txyewy', operation: remove, option: "remove-ai", errorAction: Ignore}
+
+  - !writeStatus: {status: "Removing OneDrive", option: "remove-onedrive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\Microsoft.OneDrive_8wekyb3d8bbwe', operation: add, option: "remove-onedrive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\microsoft.microsoftskydrive_8wekyb3d8bbwe', operation: add, option: "remove-onedrive"}
+  - !registryKey: {path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Appx\AppxAllUserStore\Deprovisioned\Microsoft.SkyDrive_8wekyb3d8bbwe', operation: add, option: "remove-onedrive"}
+  - !taskKill: {name: "OneDriveStandaloneUpdater", option: "remove-onedrive", errorAction: Ignore}
+  - !taskKill: {name: "OneDriveSetup", option: "remove-onedrive", errorAction: Ignore}
+  - !taskKill: {name: "OneDrive", option: "remove-onedrive", errorAction: Ignore}
+
+  - !writeStatus: {status: "Applying Network Settings", option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'TcpAckFrequency', type: REG_DWORD, data: '1', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'TCPNoDelay', type: REG_DWORD, data: '1', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'DefaultTTL', type: REG_DWORD, data: '64', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'EnablePMTUDiscovery', type: REG_DWORD, data: '1', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'EnablePMTUBHDetect', type: REG_DWORD, data: '0', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'NonBestEffortLimit', type: REG_DWORD, data: '0', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'GlobalMaxTcpWindowSize', type: REG_DWORD, data: '16777216', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'TcpMaxDataRetransmissions', type: REG_DWORD, data: '3', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\Tcpip\Parameters', value: 'KeepAliveTime', type: REG_DWORD, data: '300000', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Lsa', value: 'RestrictAnonymous', type: REG_DWORD, data: '1', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Control\Lsa', value: 'RestrictAnonymousSAM', type: REG_DWORD, data: '1', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters', value: 'SMB1', type: REG_DWORD, data: '0', option: "remove-edge"}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters', value: 'SMB2', type: REG_DWORD, data: '1', option: "remove-edge", errorAction: Ignore}
+  - !registryValue: {path: 'HKLM\SYSTEM\CurrentControlSet\Services\LanmanServer\Parameters', value: 'SMB3', type: REG_DWORD, data: '1', option: "remove-edge", errorAction: Ignore}

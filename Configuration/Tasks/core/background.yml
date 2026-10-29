@@ -1,0 +1,8 @@
+---
+privilege: TrustedInstaller
+title: Background Theme
+description: Applies Argus theme or custom background
+actions:
+  - !writeStatus: {status: "Applying theme"}
+  - !task: {path: 'Tasks\core\background-argus.yml', option: 'theme-argus'}
+  - !task: {path: 'Tasks\core\background-custom.yml', option: 'theme-custom'}

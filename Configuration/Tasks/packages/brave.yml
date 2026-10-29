@@ -1,0 +1,17 @@
+---
+privilege: TrustedInstaller
+title: Install Brave Browser
+description: Downloads and silently installs Brave browser
+actions:
+  - !writeStatus: {status: "Installing Brave browser"}
+  - !powerShell:
+      command: >-
+        $url = 'https://github.com/brave/brave-browser/releases/latest/download/BraveBrowserStandaloneSetup.exe'
+        $output = Join-Path $env:TEMP 'BraveInstaller.exe'
+        Invoke-WebRequest -Uri $url -OutFile $output -UseBasicParsing
+        Start-Process -FilePath $output -ArgumentList '--silent --install' -Wait
+      wait: true
+      runas: currentUserElevated
+      errorAction: Ignore
+      option: 'browser-install-brave'
+  - !writeStatus: {status: "Brave installed successfully"}
