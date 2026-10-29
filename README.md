@@ -14,6 +14,7 @@ Professional, auditable AME Wizard playbook for Windows 11 customization.
 
 - Windows 11 24H2 (Build 26100)
 - Windows 11 25H2 (Build 26200)
+- Windows 11 Insider (Build 26300)
 
 ## Profiles
 
